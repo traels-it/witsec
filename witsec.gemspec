@@ -20,5 +20,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails", "~> 8.0"
   spec.add_development_dependency "minitest-spec-rails"
   spec.add_development_dependency "faker"
-  spec.add_development_dependency "standard"
+  spec.add_development_dependency "standard", '~> 1.44'
 end
