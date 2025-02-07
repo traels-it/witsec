@@ -47,7 +47,7 @@ namespace :witsec do
       end
     end
 
-    desc "Runs all other Witsec verifications"
+    desc "Runs all Witsec verifications"
     task verify: :environment do
       error_messages = []
       begin
