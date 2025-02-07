@@ -17,5 +17,7 @@ Gem::Specification.new do |spec|
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   end
 
-  spec.add_dependency "activerecord", "~> 8.0"
+  spec.add_dependency "rails", "~> 8.0"
+  spec.add_development_dependency "minitest-spec-rails"
+  spec.add_development_dependency "faker"
 end
