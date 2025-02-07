@@ -1,13 +1,13 @@
 require_relative "lib/witsec/version"
 
 Gem::Specification.new do |spec|
-  spec.name        = "witsec"
-  spec.version     = Witsec::VERSION
-  spec.authors     = [ "Nicolai Bach Woller" ]
-  spec.email       = [ "woller@traels.it" ]
-  spec.homepage    = "https://github.com/traels-it/witsec"
-  spec.summary     = "Anonymize your database for dumping"
-  spec.license     = "MIT"
+  spec.name = "witsec"
+  spec.version = Witsec::VERSION
+  spec.authors = ["Nicolai Bach Woller"]
+  spec.email = ["woller@traels.it"]
+  spec.homepage = "https://github.com/traels-it/witsec"
+  spec.summary = "Anonymize your database for dumping"
+  spec.license = "MIT"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
@@ -20,4 +20,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails", "~> 8.0"
   spec.add_development_dependency "minitest-spec-rails"
   spec.add_development_dependency "faker"
+  spec.add_development_dependency "standard"
 end
