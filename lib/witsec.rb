@@ -5,5 +5,6 @@ require "witsec/anonymizer"
 require "witsec/schema"
 
 module Witsec
-  # Your code goes here...
+  class InputAndOutputDatabasesAreTheSame < StandardError
+  end
 end

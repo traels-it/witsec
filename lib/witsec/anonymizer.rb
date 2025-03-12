@@ -4,6 +4,8 @@ module Witsec
 
     def initialize
       @schema = instance_eval(File.read("config/witsec/schema.rb"))
+
+      check_input_and_output_are_different
     end
 
     attr_reader :schema
@@ -73,6 +75,12 @@ module Witsec
     end
 
     private
+
+    def check_input_and_output_are_different
+      if input_connection_pool.lease_connection.current_database == output_connection_pool.lease_connection.current_database
+        raise Witsec::InputAndOutputDatabasesAreTheSame, "You've probably forgotten to setup the output database. It must be named anonymized."
+      end
+    end
 
     def input_database_configuration
       Rails.configuration.database_configuration[Rails.env]["primary"]
