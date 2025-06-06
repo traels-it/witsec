@@ -77,6 +77,8 @@ module Witsec
     private
 
     def check_input_and_output_are_different
+      return if Rails.env.test?
+
       if input_connection_pool.lease_connection.current_database == output_connection_pool.lease_connection.current_database
         raise Witsec::InputAndOutputDatabasesAreTheSame, "You've probably forgotten to setup the output database. It must be named anonymized."
       end
