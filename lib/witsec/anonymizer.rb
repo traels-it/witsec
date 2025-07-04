@@ -2,8 +2,8 @@ module Witsec
   class Anonymizer
     BATCH_SIZE = 1000
 
-    def initialize
-      @schema = instance_eval(File.read("config/witsec/schema.rb"))
+    def initialize(schema_path = "config/witsec/schema.rb")
+      @schema = instance_eval(File.read(schema_path))
 
       check_input_and_output_are_different
     end
