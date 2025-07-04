@@ -1,3 +1,5 @@
+require "sequel"
+
 module Witsec
   class Anonymizer
     BATCH_SIZE = 1000
@@ -63,16 +65,8 @@ module Witsec
     def clear_output_database
       puts "Clearing output database"
 
-      silence do
-        connection = output_connection_pool.lease_connection
-
-        connection.disable_referential_integrity do
-          connection.tables.each do |table_name|
-            connection.execute("TRUNCATE TABLE #{table_name} CASCADE")
-          end
-        end
-
-        output_connection_pool.release_connection
+      output_database.tables.each do |table_name|
+        output_database.run("TRUNCATE TABLE #{table_name} CASCADE")
       end
     end
 
@@ -110,6 +104,15 @@ module Witsec
 
     def output_connection_pool
       ActiveRecord::Base.establish_connection(output_database_configuration)
+    end
+
+    def output_database
+      @output_database ||= begin
+        config = output_database_configuration.slice("host", "database", "password")
+          .merge("adapter" => "postgres", "user" => output_database_configuration["username"])
+        
+        Sequel.connect(**config)
+      end
     end
   end
 end
