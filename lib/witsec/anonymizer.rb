@@ -58,6 +58,8 @@ module Witsec
       puts "Anonymized all in #{time.real} seconds"
     end
 
+    private
+
     def clear_output_database
       puts "Clearing output database"
 
@@ -73,8 +75,6 @@ module Witsec
         output_connection_pool.release_connection
       end
     end
-
-    private
 
     def check_input_and_output_are_different
       return if Rails.env.test?
