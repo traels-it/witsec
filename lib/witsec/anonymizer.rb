@@ -13,10 +13,10 @@ module Witsec
     # TODO: Make silence configurable
     def anonymize
       time = Benchmark.measure do
-        ActiveRecord::Base.logger.silence do
+        silence do
           clear_output_database
 
-          ActiveRecord::Base.connection.tables.each do |table_name|
+          tables.each do |table_name|
             if schema.anonymizes?(table_name)
               # A performance improvement could probably be found here, if we just passed along included tables (as in tables, where no rows are anonymized) without querying etc.
 
@@ -38,7 +38,7 @@ module Witsec
                   print "Anonymizing up to row #{total + batch.size} of #{rows.size}\r"
                   total += batch.size
                   values = batch.map do |row|
-                    "(#{row.map { |value| ActiveRecord::Base.connection.quote(value) }.join(", ")})"
+                    "(#{row.map { |value| quote(value) }.join(", ")})"
                   end.join(", ")
 
                   output_connection.execute(
@@ -61,7 +61,7 @@ module Witsec
     def clear_output_database
       puts "Clearing output database"
 
-      ActiveRecord::Base.logger.silence do
+      silence do
         connection = output_connection_pool.lease_connection
 
         connection.disable_referential_integrity do
@@ -82,6 +82,18 @@ module Witsec
       if input_connection_pool.lease_connection.current_database == output_connection_pool.lease_connection.current_database
         raise Witsec::InputAndOutputDatabasesAreTheSame, "You've probably forgotten to setup the output database. It must be named anonymized."
       end
+    end
+
+    def tables
+      ActiveRecord::Base.connection.tables
+    end
+
+    def silence(&block)
+      ActiveRecord::Base.logger.silence(&block)
+    end
+
+    def quote(value)
+      ActiveRecord::Base.connection.quote(value)
     end
 
     def input_database_configuration
