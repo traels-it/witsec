@@ -18,6 +18,8 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency "rails", "~> 8.0"
+  spec.add_dependency "sequel", "~> 5.94.0"
+  spec.add_dependency "dry-configurable", "~> 1.3.0"
   spec.add_development_dependency "minitest-spec-rails"
   spec.add_development_dependency "faker"
   spec.add_development_dependency "standard", "~> 1.44"
