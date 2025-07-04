@@ -35,7 +35,7 @@ module Witsec
     end
 
     def anonymizes?(table_name)
-      anonymized_table_names.include?(table_name)
+      anonymized_table_names.include?(table_name.to_s)
     end
 
     def table_names

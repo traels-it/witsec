@@ -12,47 +12,29 @@ module Witsec
 
     attr_reader :schema
 
-    # TODO: Make silence configurable
     def anonymize
       time = Benchmark.measure do
-        silence do
-          clear_output_database
+        clear_output_database
 
-          tables.each do |table_name|
-            if schema.anonymizes?(table_name)
-              # A performance improvement could probably be found here, if we just passed along included tables (as in tables, where no rows are anonymized) without querying etc.
+        input_database.tables.each do |table_name|
+          next unless schema.anonymizes?(table_name)
 
-              input_connection = input_connection_pool.lease_connection
-              record_rows = input_connection.execute("SELECT * FROM #{table_name}").to_a
-              columns = record_rows&.first&.keys
-              rows = record_rows.map(&:values)
-              puts "Anonymizing #{table_name} (#{rows.size} rows)"
-              input_connection_pool.release_connection
+          # A performance improvement could probably be found here, if we just passed along included tables (as in tables, where no rows are anonymized) without querying etc.
+          record_rows = input_database[table_name].all
+          columns = record_rows&.first&.keys
+          rows = record_rows.map(&:values)
+          puts "Anonymizing #{table_name} (#{rows.size} rows)"
 
-              anonymized_rows = Witsec::Alias.new(table_name, columns:, schema:).anonymize(rows)
-              output_connection = output_connection_pool.lease_connection
-              # If referential integrity is not disabled, you have to create all rows in the correct order
-              output_connection.disable_referential_integrity do
-                # Use insert for performance
-                row_batches = anonymized_rows.in_groups_of(BATCH_SIZE, false)
-                total = 0
-                row_batches.each_with_index do |batch, index|
-                  print "Anonymizing up to row #{total + batch.size} of #{rows.size}\r"
-                  total += batch.size
-                  values = batch.map do |row|
-                    "(#{row.map { |value| quote(value) }.join(", ")})"
-                  end.join(", ")
+          anonymized_rows = Witsec::Alias.new(table_name, columns:, schema:).anonymize(rows)
 
-                  output_connection.execute(
-                    "INSERT INTO #{table_name} (#{columns.join(", ")}) VALUES #{values}"
-                  )
-                end
-              end
+          row_batches = anonymized_rows.in_groups_of(BATCH_SIZE, false)
+          total = 0
+          row_batches.each_with_index do |batch, index|
+            print "Anonymizing up to row #{total + batch.size} of #{rows.size}\r"
+            total += batch.size
 
-              output_connection_pool.release_connection
-            else
-              puts "Skipping #{table_name}"
-              next
+            disable_output_referential_integrity do
+              output_database[table_name].import(columns, batch)
             end
           end
         end
@@ -73,45 +55,47 @@ module Witsec
     def check_input_and_output_are_different
       return if Rails.env.test?
 
-      if input_connection_pool.lease_connection.current_database == output_connection_pool.lease_connection.current_database
+      if input_database == output_database
         raise Witsec::InputAndOutputDatabasesAreTheSame, "You've probably forgotten to setup the output database. It must be named anonymized."
       end
-    end
-
-    def tables
-      ActiveRecord::Base.connection.tables
-    end
-
-    def silence(&block)
-      ActiveRecord::Base.logger.silence(&block)
-    end
-
-    def quote(value)
-      ActiveRecord::Base.connection.quote(value)
     end
 
     def input_database_configuration
       Rails.configuration.database_configuration[Rails.env]["primary"]
     end
 
-    def input_connection_pool
-      ActiveRecord::Base.establish_connection(input_database_configuration)
-    end
-
     def output_database_configuration
       Rails.configuration.database_configuration[Rails.env]["anonymized"]
-    end
-
-    def output_connection_pool
-      ActiveRecord::Base.establish_connection(output_database_configuration)
     end
 
     def output_database
       @output_database ||= begin
         config = output_database_configuration.slice("host", "database", "password")
           .merge("adapter" => "postgres", "user" => output_database_configuration["username"])
-        
+
         Sequel.connect(**config)
+      end
+    end
+
+    def input_database
+      @input_database ||= begin
+        config = input_database_configuration.slice("host", "database", "password")
+          .merge("adapter" => "postgres", "user" => output_database_configuration["username"])
+
+        Sequel.connect(**config)
+      end
+    end
+
+    def disable_output_referential_integrity(&block)
+      case output_database.adapter_scheme
+      when :postgres
+        output_database.run(output_database.tables.collect { |name| "ALTER TABLE #{name} DISABLE TRIGGER ALL" }.join(";"))
+        
+        yield
+
+        output_database.run(output_database.tables.collect { |name| "ALTER TABLE #{name} ENABLE TRIGGER ALL" }.join(";"))
+      else
+        raise "Cannot disable referential integrity for #{output_database.adapter_scheme}"
       end
     end
   end
