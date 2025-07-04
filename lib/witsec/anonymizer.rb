@@ -53,44 +53,26 @@ module Witsec
     end
 
     def check_input_and_output_are_different
-      return if Rails.env.test?
+      return if defined?(Rails) && Rails.env.test?
 
-      if input_database == output_database
-        raise Witsec::InputAndOutputDatabasesAreTheSame, "You've probably forgotten to setup the output database. It must be named anonymized."
+      if Witsec.config.output == Witsec.config.input
+        raise Witsec::InputAndOutputDatabasesAreTheSame
       end
-    end
-
-    def input_database_configuration
-      Rails.configuration.database_configuration[Rails.env]["primary"]
-    end
-
-    def output_database_configuration
-      Rails.configuration.database_configuration[Rails.env]["anonymized"]
     end
 
     def output_database
-      @output_database ||= begin
-        config = output_database_configuration.slice("host", "database", "password")
-          .merge("adapter" => "postgres", "user" => output_database_configuration["username"])
-
-        Sequel.connect(**config)
-      end
+      @output_database ||= Sequel.connect(**Witsec.config.output.to_h)
     end
 
     def input_database
-      @input_database ||= begin
-        config = input_database_configuration.slice("host", "database", "password")
-          .merge("adapter" => "postgres", "user" => output_database_configuration["username"])
-
-        Sequel.connect(**config)
-      end
+      @input_database ||= Sequel.connect(**Witsec.config.input.to_h)
     end
 
     def disable_output_referential_integrity(&block)
       case output_database.adapter_scheme
       when :postgres
         output_database.run(output_database.tables.collect { |name| "ALTER TABLE #{name} DISABLE TRIGGER ALL" }.join(";"))
-        
+
         yield
 
         output_database.run(output_database.tables.collect { |name| "ALTER TABLE #{name} ENABLE TRIGGER ALL" }.join(";"))
