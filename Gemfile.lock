@@ -3,6 +3,7 @@ PATH
   specs:
     witsec (0.1.2)
       rails (~> 8.0)
+      sequel (~> 5.94.0)
 
 GEM
   remote: https://rubygems.org/
@@ -231,6 +232,8 @@ GEM
       rubocop-rails
     ruby-progressbar (1.13.0)
     securerandom (0.4.1)
+    sequel (5.94.0)
+      bigdecimal
     sqlite3 (2.6.0-aarch64-linux-gnu)
     sqlite3 (2.6.0-aarch64-linux-musl)
     sqlite3 (2.6.0-arm-linux-gnu)
